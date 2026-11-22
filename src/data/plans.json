@@ -1,0 +1,31 @@
+[
+  {
+    "id": "monthly",
+    "name": "Monthly",
+    "durationMonths": 1,
+    "price": 150,
+    "currency": "GHS",
+    "tagline": "Flexible: renew month to month",
+    "perks": ["Public beautician profile", "Unlimited service listings", "Booking requests inbox"]
+  },
+  {
+    "id": "six_month",
+    "name": "6-Month",
+    "durationMonths": 6,
+    "price": 750,
+    "currency": "GHS",
+    "tagline": "Save 17% vs monthly",
+    "perks": ["Everything in Monthly", "Featured in search for 2 weeks", "Portfolio gallery"]
+  },
+  {
+    "id": "yearly",
+    "name": "Yearly",
+    "durationMonths": 12,
+    "price": 1200,
+    "currency": "GHS",
+    "tagline": "Save 33%, just GH₵100 a month",
+    "highlight": true,
+    "badge": "Best Value",
+    "perks": ["Everything in 6-Month", "Verified badge", "Priority support"]
+  }
+]

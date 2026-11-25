@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
@@ -8,6 +9,29 @@ const cookieParser = require('cookie-parser');
 const config = require('./config');
 const { attachUser } = require('./middleware/auth');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
+
+let cachedConn = global.__mongooseConn;
+if (!cachedConn) {
+  cachedConn = global.__mongooseConn = { conn: null, promise: null };
+}
+
+async function connectDB() {
+  if (cachedConn.conn) return cachedConn.conn;
+
+  const mongoUri = process.env.MONGODB_URI || config.mongodbUri || config.mongoUri;
+  if (!mongoUri) {
+    throw new Error('MONGODB_URI is not set');
+  }
+
+  if (!cachedConn.promise) {
+    cachedConn.promise = mongoose.connect(mongoUri, {
+      bufferCommands: false,
+    });
+  }
+
+  cachedConn.conn = await cachedConn.promise;
+  return cachedConn.conn;
+}
 
 function createApp() {
   const app = express();
@@ -40,6 +64,17 @@ function createApp() {
   );
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
+
+  // Ensure MongoDB is connected before attachUser or any /api route runs on serverless.
+  app.use('/api', async (_req, _res, next) => {
+    try {
+      await connectDB();
+      next();
+    } catch (err) {
+      next(err);
+    }
+  });
+
   app.use('/api', attachUser);
 
   app.use('/api/health', require('./routes/health.routes'));

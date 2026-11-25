@@ -54,7 +54,8 @@ function createApp() {
   app.use('/api', notFound);
 
   // Single-port mode (`npm start`): serve the built React app and let it handle routing.
-  if (config.isProduction && fs.existsSync(config.frontendDist)) {
+  // Skip on Vercel because static assets are served by Vercel's CDN and express.static() is ignored.
+  if (!process.env.VERCEL && config.isProduction && fs.existsSync(config.frontendDist)) {
     app.use(express.static(config.frontendDist));
     app.get('*', (_req, res) => res.sendFile(path.join(config.frontendDist, 'index.html')));
   }
@@ -63,4 +64,7 @@ function createApp() {
   return app;
 }
 
-module.exports = { createApp };
+const app = createApp();
+app.createApp = createApp;
+
+module.exports = app;

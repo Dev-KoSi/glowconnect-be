@@ -6,7 +6,14 @@
 const nodemailer = require('nodemailer');
 const config = require('../config');
 
-const consoleMode = !config.smtp.host;
+const smtpHost = String(config.smtp.host || '').trim();
+const smtpPort = Number(config.smtp.port) || 465;
+// Port 465 uses implicit TLS (secure: true); port 587/25 uses STARTTLS (secure: false).
+const smtpSecure = smtpPort === 465;
+const smtpUser = String(config.smtp.user || '').trim();
+const smtpPass = String(config.smtp.pass || '').trim();
+
+const consoleMode = !smtpHost;
 /** Messages "sent" in console mode (read by the API tests). */
 const outbox = [];
 let transporter = null;
@@ -14,10 +21,13 @@ let transporter = null;
 function getTransporter() {
   if (!transporter) {
     transporter = nodemailer.createTransport({
-      host: config.smtp.host,
-      port: config.smtp.port,
-      secure: config.smtp.secure,
-      auth: config.smtp.user ? { user: config.smtp.user, pass: config.smtp.pass } : undefined,
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth: smtpUser ? { user: smtpUser, pass: smtpPass } : undefined,
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 10000,
     });
   }
   return transporter;
@@ -28,7 +38,9 @@ async function sendMail({ to, subject, text, html }) {
     outbox.push({ to, subject, text, html, sentAt: new Date() });
     if (outbox.length > 50) outbox.shift();
     if (!config.isTest) {
-      console.log(`\n[mail] (SMTP not configured, printing instead of sending)\n[mail] To: ${to}\n[mail] Subject: ${subject}\n${text.replace(/^/gm, '[mail] ')}\n`);
+      console.log(
+        `\n[mail] (SMTP not configured, printing instead of sending)\n[mail] To: ${to}\n[mail] Subject: ${subject}\n${text.replace(/^/gm, '[mail] ')}\n`,
+      );
     }
     return;
   }
